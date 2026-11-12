@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Kiểm tra cú pháp
+        run: python -m py_compile launcher.py tools/build_notebook.py
+
+      - name: Notebook phải khớp với launcher.py
+        run: |
+          python tools/build_notebook.py
+          git diff --exit-code -- Qwen3_8_27B_Colab.ipynb
+
+      - name: Chạy thử toàn bộ luồng trên CPU với model tí hon
+        env:
+          QWEN_LAUNCHER_OVERRIDES: >-
+            {"repo": "bartowski/SmolLM2-135M-Instruct-GGUF", "quant": "Q4_K_M",
+             "allow_cpu": true, "reasoning": "off", "exit_after_s": 20}
+        run: python launcher.py
